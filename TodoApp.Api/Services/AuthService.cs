@@ -51,7 +51,8 @@ public class AuthService : IAuthService
         var passwordVerificationResult = _passwordHasher.VerifyHashedPassword(existingUser, existingUser.PasswordHash, dto.Password);
         if (passwordVerificationResult == PasswordVerificationResult.Failed)
         {
-            throw new InvalidOperationException("Incorrect password");
+            throw new UnauthorizedAccessException("Неправильний email або пароль"
+);
         }
         var token = GenerateJwtToken(existingUser);
 
