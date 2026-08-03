@@ -1,7 +1,10 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class TaskListController : ControllerBase
 {
     private readonly ITaskListService _taskListService;
@@ -12,15 +15,27 @@ public class TaskListController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<ActionResult<TaskList>> Create(int userId, string name)
+    public async Task<ActionResult<TaskList>> Create(TaskListDto dto)
     {
-        var createdTaskList = await _taskListService.CreateAsync(userId, name);
+        var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (!int.TryParse(userIdString, out var userId))
+        {
+            return Unauthorized();
+        }
+        var createdTaskList = await _taskListService.CreateAsync(userId, dto);
         return CreatedAtAction(nameof(GetById), new { id = createdTaskList.Id }, createdTaskList);
     }
 
-    [HttpGet("user/{userId}")]
-    public async Task<ActionResult<List<TaskList>>> GetAll(int userId)
+    [HttpGet("all")]
+    public async Task<ActionResult<List<TaskList>>> GetAll()
     {
+        var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (!int.TryParse(userIdString, out var userId))
+        {
+            return Unauthorized();
+        }
         var taskLists = await _taskListService.GetAllAsync(userId);
         return Ok(taskLists);
     }
@@ -38,9 +53,9 @@ public class TaskListController : ControllerBase
     }
 
     [HttpPut("{id}")]
-    public async Task<ActionResult<TaskList>> Update(int id, string name)
+    public async Task<ActionResult<TaskList>> Update(int id, [FromBody] TaskListDto dto)
     {
-        var updatedTaskList = await _taskListService.UpdateAsync(id, name);
+        var updatedTaskList = await _taskListService.UpdateAsync(id, dto);
         if (updatedTaskList == null)
         {
             return NotFound();

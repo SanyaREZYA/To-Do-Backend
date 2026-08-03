@@ -1,7 +1,9 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class TaskController : ControllerBase
 {
     private readonly ITaskService _taskService;
@@ -40,6 +42,13 @@ public class TaskController : ControllerBase
         return Ok(task);
     }
 
+    [HttpGet]
+    public async Task<ActionResult<PagedResponseDto<TaskItem>>> GetTasks([FromQuery] GetTasksQueryDto query)
+    {
+        var result = await _taskService.GetTasksAsync(query);
+        return Ok(result);
+    }
+
     [HttpPut("{id}")]
     public async Task<ActionResult<TaskItem>> Update(int id, UpdateTaskDto dto)
     {
@@ -66,10 +75,10 @@ public class TaskController : ControllerBase
         return NoContent();
     }
 
-    [HttpPatch("{id}/important")]
-    public async Task<ActionResult<TaskItem>> UpdateIsImportant(int id, [FromBody] bool isImportant)
+    [HttpPatch("important")]
+    public async Task<ActionResult<TaskItem>> UpdateIsImportant([FromBody] int id)
     {
-        var updatedTask = await _taskService.UpdateIsImportant(id, isImportant);
+        var updatedTask = await _taskService.UpdateIsImportant(id);
 
         if (updatedTask == null)
         {
@@ -79,10 +88,10 @@ public class TaskController : ControllerBase
         return Ok(updatedTask);
     }
 
-    [HttpPatch("{id}/completed")]
-    public async Task<ActionResult<TaskItem>> UpdateIsCompleted(int id, [FromBody] bool isCompleted)
+    [HttpPatch("completed")]
+    public async Task<ActionResult<TaskItem>> UpdateIsCompleted([FromBody] int id)
     {
-        var updatedTask = await _taskService.UpdateIsCompleted(id, isCompleted);
+        var updatedTask = await _taskService.UpdateIsCompleted(id);
 
         if (updatedTask == null)
         {

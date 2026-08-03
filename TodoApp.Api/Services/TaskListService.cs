@@ -9,11 +9,11 @@ public class TaskListService : ITaskListService
         _context = context;
     }
 
-    public async Task<TaskList> CreateAsync(int userId, string name)
+    public async Task<TaskList> CreateAsync(int userId, TaskListDto dto)
     {
         var taskList = new TaskList
         {
-            Name = name,
+            Name = dto.Name,
             UserId = userId
         };
         await _context.TaskLists.AddAsync(taskList);
@@ -31,7 +31,7 @@ public class TaskListService : ITaskListService
         return await _context.TaskLists.FirstOrDefaultAsync(taskList => taskList.Id == id);
     }
 
-    public async Task<TaskList?> UpdateAsync(int id, string name)
+    public async Task<TaskList?> UpdateAsync(int id, TaskListDto dto)
     {
         var taskList = await _context.TaskLists.FindAsync(id);
         if (taskList == null)
@@ -39,7 +39,7 @@ public class TaskListService : ITaskListService
             return null;
         }
 
-        taskList.Name = name;
+        taskList.Name = dto.Name;
 
         await _context.SaveChangesAsync();
         return taskList;

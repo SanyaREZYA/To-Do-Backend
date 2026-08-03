@@ -16,7 +16,9 @@ public class TaskService : ITaskService
             Title = dto.Title,
             Description = dto.Description,
             IsImportant = dto.IsImportant,
-            DueDate = dto.DueDate
+            DueDate = dto.DueDate.HasValue
+        ? DateTime.SpecifyKind(dto.DueDate.Value, DateTimeKind.Utc)
+        : null
         };
         await _context.Tasks.AddAsync(task);
         await _context.SaveChangesAsync();
@@ -33,6 +35,49 @@ public class TaskService : ITaskService
         return await _context.Tasks.FirstOrDefaultAsync(task => task.Id == id);
     }
 
+    public async Task<PagedResponseDto<TaskItem>> GetTasksAsync(GetTasksQueryDto query)
+    {
+        IQueryable<TaskItem> tasksQuery = _context.Tasks
+            .Where(task => task.TaskListId == query.TaskListId);
+
+        tasksQuery = query.SortBy.ToLower() switch
+        {
+            "title" => query.SortDirection.ToLower() == "desc"
+                ? tasksQuery.OrderByDescending(task => task.Title)
+                : tasksQuery.OrderBy(task => task.Title),
+
+            "duedate" => query.SortDirection.ToLower() == "desc"
+                ? tasksQuery.OrderByDescending(task => task.DueDate)
+                : tasksQuery.OrderBy(task => task.DueDate),
+
+            _ => query.SortDirection.ToLower() == "desc"
+                ? tasksQuery.OrderByDescending(task => task.Id)
+                : tasksQuery.OrderBy(task => task.Id)
+        };
+
+        var totalCount = await tasksQuery.CountAsync();
+
+        var skip = (query.Page - 1) * query.PageSize;
+
+        var tasks = await tasksQuery
+            .Skip(skip)
+            .Take(query.PageSize)
+            .ToListAsync();
+
+        var totalPages = (int)Math.Ceiling(
+            (double)totalCount / query.PageSize
+        );
+
+        return new PagedResponseDto<TaskItem>
+        {
+            Items = tasks,
+            Page = query.Page,
+            PageSize = query.PageSize,
+            TotalCount = totalCount,
+            TotalPages = totalPages
+        };
+    }
+
     public async Task<TaskItem?> UpdateAsync(int id, UpdateTaskDto dto)
     {
         var task = await _context.Tasks.FindAsync(id);
@@ -43,7 +88,9 @@ public class TaskService : ITaskService
 
         task.Title = dto.Title;
         task.Description = dto.Description;
-        task.DueDate = dto.DueDate;
+        task.DueDate = dto.DueDate.HasValue
+        ? DateTime.SpecifyKind(dto.DueDate.Value, DateTimeKind.Utc)
+        : null;
 
         await _context.SaveChangesAsync();
         return task;
@@ -63,7 +110,7 @@ public class TaskService : ITaskService
         return true;
     }
 
-    public async Task<TaskItem?> UpdateIsImportant(int id, bool newIsImportant)
+    public async Task<TaskItem?> UpdateIsImportant(int id)
     {
         var task = await _context.Tasks.FindAsync(id);
         if (task == null)
@@ -71,13 +118,13 @@ public class TaskService : ITaskService
             return null;
         }
 
-        task.IsImportant = newIsImportant;
+        task.IsImportant = !task.IsImportant;
 
         await _context.SaveChangesAsync();
         return task;
     }
 
-    public async Task<TaskItem?> UpdateIsCompleted(int id, bool newIsCompleted)
+    public async Task<TaskItem?> UpdateIsCompleted(int id)
     {
         var task = await _context.Tasks.FindAsync(id);
         if (task == null)
@@ -85,7 +132,7 @@ public class TaskService : ITaskService
             return null;
         }
 
-        task.IsCompleted = newIsCompleted;
+        task.IsCompleted = !task.IsCompleted;
 
         await _context.SaveChangesAsync();
         return task;

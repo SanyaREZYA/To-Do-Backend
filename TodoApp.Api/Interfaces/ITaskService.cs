@@ -6,10 +6,12 @@ public interface ITaskService
 
     Task<TaskItem?> GetByIdAsync(int id);
 
+    Task<PagedResponseDto<TaskItem>> GetTasksAsync(GetTasksQueryDto query);
+
     Task<TaskItem?> UpdateAsync(int id, UpdateTaskDto dto);
 
     Task<bool> DeleteAsync(int id);
 
-    Task<TaskItem?> UpdateIsImportant(int id, bool newIsImportant);
-    Task<TaskItem?> UpdateIsCompleted(int id, bool newIsCompleted);
+    Task<TaskItem?> UpdateIsImportant(int id);
+    Task<TaskItem?> UpdateIsCompleted(int id);
 }
