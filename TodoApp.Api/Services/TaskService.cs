@@ -35,20 +35,36 @@ public class TaskService : ITaskService
         return await _context.Tasks.FirstOrDefaultAsync(task => task.Id == id);
     }
 
-    public async Task<PagedResponseDto<TaskItem>> GetTasksAsync(GetTasksQueryDto query)
+    public async Task<PagedResponseDto<TaskItem>> GetTasksAsync(
+    GetTasksQueryDto query)
     {
+        query.Page = Math.Max(query.Page, 1);
+        query.PageSize = Math.Clamp(query.PageSize, 1, 100);
+
         IQueryable<TaskItem> tasksQuery = _context.Tasks
             .Where(task => task.TaskListId == query.TaskListId);
 
         tasksQuery = query.SortBy.ToLower() switch
         {
             "title" => query.SortDirection.ToLower() == "desc"
-                ? tasksQuery.OrderByDescending(task => task.Title)
-                : tasksQuery.OrderBy(task => task.Title),
+                ? tasksQuery
+                    .OrderByDescending(task => task.Title)
+                    .ThenBy(task => task.Id)
+                : tasksQuery
+                    .OrderBy(task => task.Title)
+                    .ThenBy(task => task.Id),
 
             "duedate" => query.SortDirection.ToLower() == "desc"
-                ? tasksQuery.OrderByDescending(task => task.DueDate)
-                : tasksQuery.OrderBy(task => task.DueDate),
+                ? tasksQuery
+                    .OrderBy(task => task.DueDate == null)
+                    .ThenByDescending(task => task.DueDate)
+                    .ThenBy(task => task.Title)
+                    .ThenBy(task => task.Id)
+                : tasksQuery
+                    .OrderBy(task => task.DueDate == null)
+                    .ThenBy(task => task.DueDate)
+                    .ThenBy(task => task.Title)
+                    .ThenBy(task => task.Id),
 
             _ => query.SortDirection.ToLower() == "desc"
                 ? tasksQuery.OrderByDescending(task => task.Id)
