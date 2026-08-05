@@ -14,4 +14,6 @@ public class GetTasksQueryDto
     public string SortBy { get; set; } = "id";
 
     public string SortDirection { get; set; } = "asc";
+
+    public string? Search { get; set; }
 }

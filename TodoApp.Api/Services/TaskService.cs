@@ -44,6 +44,17 @@ public class TaskService : ITaskService
         IQueryable<TaskItem> tasksQuery = _context.Tasks
             .Where(task => task.TaskListId == query.TaskListId);
 
+        if (!string.IsNullOrWhiteSpace(query.Search))
+        {
+            var search = query.Search.Trim();
+
+            tasksQuery = tasksQuery.Where(task =>
+                EF.Functions.ILike(
+                    task.Title,
+                    $"%{search}%"
+                ));
+        }
+
         tasksQuery = query.SortBy.ToLower() switch
         {
             "title" => query.SortDirection.ToLower() == "desc"
